@@ -72,7 +72,7 @@
 /* #undef EPETRA_ADDRESS64BIT */
 
 /* Define if want to build epetra-abc */
-/* #undef HAVE_EPETRA_ARRAY_BOUNDS_CHECK */
+#define HAVE_EPETRA_ARRAY_BOUNDS_CHECK
 
 /* Define if want to build epetra-examples */
 /* #undef HAVE_EPETRA_EXAMPLES */

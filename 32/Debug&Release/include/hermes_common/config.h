@@ -1,7 +1,7 @@
 #ifndef __HERMES_CONFIG_H_
 #define __HERMES_CONFIG_H_
 
-/* #undef HERMES_STATIC_LIBS */
+#define HERMES_STATIC_LIBS
 
 // OpenMP
 #define NUM_THREADS 8

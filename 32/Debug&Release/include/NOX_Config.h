@@ -1,7 +1,7 @@
 
 /* #undef HAVE_MPI */
 
-/* #undef HAVE_NOX_DEBUG */
+#define HAVE_NOX_DEBUG
 
 /* #undef WITH_PRERELEASE */
 

@@ -11,7 +11,7 @@
 
 /* #undef HAVE_THYRA_COMPLEX */
 
-/* #undef HAVE_THYRA_DEBUG */
+#define HAVE_THYRA_DEBUG
 
 /* #undef HAVE_THYRA_EXPLICIT_INSTANTIATION */
 

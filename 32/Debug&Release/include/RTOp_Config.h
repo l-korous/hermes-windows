@@ -1,6 +1,6 @@
 /* #undef HAVE_MPI */
 
-/* #undef HAVE_RTOP_DEBUG */
+#define HAVE_RTOP_DEBUG
 
 /* #undef HAVE_RTOP_EXPLICIT_INSTANTIATION */
 
