@@ -43,7 +43,7 @@
 #include <cstdio>
 #include <stdarg.h>
 #include <sstream>
-#ifdef _WINDOWS
+#if defined _WINDOWS || defined _MSC_VER
 #include <memory>
 #else
 #include <tr1/memory>

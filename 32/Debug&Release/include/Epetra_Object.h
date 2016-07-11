@@ -144,18 +144,18 @@ class EPETRA_LIB_DLL_EXPORT Epetra_Object {
  protected:
   std::string toString(const int& x) const {
      char s[100];
-     sprintf(s, "%d", x);
+     sprintf_s(s, "%d", x);
      return std::string(s);
 }
   std::string toString(const long long& x) const {
      char s[100];
-     sprintf(s, "%lld", x);
+     sprintf_s(s, "%lld", x);
      return std::string(s);
 }
 
   std::string toString(const double& x) const {
      char s[100];
-     sprintf(s, "%g", x);
+     sprintf_s(s, "%g", x);
      return std::string(s);
 }
   
