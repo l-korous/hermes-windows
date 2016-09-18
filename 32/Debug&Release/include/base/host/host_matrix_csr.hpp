@@ -1,8 +1,15 @@
-// *************************************************************************
+// **************************************************************************
 //
 //    PARALUTION   www.paralution.com
 //
-//    Copyright (C) 2012-2014 Dimitar Lukarski
+//    Copyright (C) 2015  PARALUTION Labs UG (haftungsbeschränkt) & Co. KG
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRA 706051
+//                        Vertreten durch:
+//                        PARALUTION Labs Verwaltungs UG (haftungsbeschränkt)
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRB 721277
+//                        Geschäftsführer: Dimitar Lukarski, Nico Trost
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -17,11 +24,11 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// *************************************************************************
+// **************************************************************************
 
 
 
-// PARALUTION version 0.7.0b 
+// PARALUTION version 1.0.0 
 
 
 #ifndef PARALUTION_HOST_MATRIX_CSR_HPP_
@@ -35,7 +42,7 @@ namespace paralution {
 
 template <typename ValueType>
 class HostMatrixCSR : public HostMatrix<ValueType> {
-  
+
 public:
 
   HostMatrixCSR();
@@ -52,16 +59,16 @@ public:
   virtual void LeaveDataPtrCSR(int **row_offset, int **col, ValueType **val);
 
   virtual void Clear(void);
-  virtual void Zeros(void);
+  virtual bool Zeros(void);
 
-  virtual void Assemble(const int *i, const int *j, const ValueType *v,
+  virtual bool Assemble(const int *i, const int *j, const ValueType *v,
                         const int size, const int n, const int m,
                         int **pp_assembly_rank,
                         int **pp_assembly_irank,
                         int **pp_assembly_loop_start,
                         int **pp_assembly_loop_end,
                         int &nThreads);
-  virtual void AssembleUpdate(const ValueType *v,
+  virtual bool AssembleUpdate(const ValueType *v,
                               const int *assembly_rank,
                               const int *assembly_irank,
                               const int *assembly_loop_start,
@@ -94,19 +101,19 @@ public:
 
   virtual bool MaximalIndependentSet(int &size,
                                      BaseVector<int> *permutation) const;
-  
-  virtual void ZeroBlockPermutation(int &size,
-                                    BaseVector<int> *permutation) const;
+
+  virtual bool ZeroBlockPermutation(int &size, BaseVector<int> *permutation) const;
 
 
-  virtual void SymbolicPower(const int p);
+  virtual bool SymbolicPower(const int p);
 
-  virtual void SymbolicMatMatMult(const BaseMatrix<ValueType> &src);
+  virtual bool SymbolicMatMatMult(const BaseMatrix<ValueType> &src);
   virtual bool MatMatMult(const BaseMatrix<ValueType> &A, const BaseMatrix<ValueType> &B);
-  virtual void SymbolicMatMatMult(const BaseMatrix<ValueType> &A, const BaseMatrix<ValueType> &B);
-  virtual void NumericMatMatMult(const BaseMatrix<ValueType> &A, const BaseMatrix<ValueType> &B);
+  virtual bool SymbolicMatMatMult(const BaseMatrix<ValueType> &A, const BaseMatrix<ValueType> &B);
+  virtual bool NumericMatMatMult(const BaseMatrix<ValueType> &A, const BaseMatrix<ValueType> &B);
 
-  virtual bool DiagonalMatrixMult(const BaseVector<ValueType> &diag);
+  virtual bool DiagonalMatrixMultR(const BaseVector<ValueType> &diag);
+  virtual bool DiagonalMatrixMultL(const BaseVector<ValueType> &diag);
 
   virtual bool MatrixAdd(const BaseMatrix<ValueType> &mat, const ValueType alpha, 
                          const ValueType beta, const bool structure);
@@ -125,16 +132,16 @@ public:
 
   virtual void CopyTo(BaseMatrix<ValueType> *mat) const;
 
-  virtual void ReadFileCSR(const std::string);
-  virtual void WriteFileCSR(const std::string) const;
+  virtual bool ReadFileCSR(const std::string);
+  virtual bool WriteFileCSR(const std::string) const;
 
   virtual bool CreateFromMap(const BaseVector<int> &map, const int n, const int m);
 
   virtual bool ICFactorize(BaseVector<ValueType> *inv_diag);
 
   virtual bool ILU0Factorize(void);
-  virtual void ILUpFactorizeNumeric(const int p, const BaseMatrix<ValueType> &mat);
-  virtual bool ILUTFactorize(const ValueType t, const int maxrow);
+  virtual bool ILUpFactorizeNumeric(const int p, const BaseMatrix<ValueType> &mat);
+  virtual bool ILUTFactorize(const double t, const int maxrow);
 
   virtual void LUAnalyse(void);
   virtual void LUAnalyseClear(void);
@@ -162,22 +169,29 @@ public:
   virtual void ApplyAdd(const BaseVector<ValueType> &in, const ValueType scalar, 
                         BaseVector<ValueType> *out) const; 
 
-  virtual bool Compress(const ValueType drop_off);
+  virtual bool Compress(const double drop_off);
   virtual bool Transpose(void);
+  virtual bool Sort(void);
 
-  virtual void AMGConnect(const ValueType eps, BaseVector<int> *connections) const;
-  virtual void AMGAggregate(const BaseVector<int> &connections, BaseVector<int> *aggregates) const;
-  virtual void AMGSmoothedAggregation(const ValueType relax,
+  virtual bool ReplaceColumnVector(const int idx, const BaseVector<ValueType> &vec);
+  virtual bool ExtractColumnVector(const int idx, BaseVector<ValueType> *vec) const;
+
+  virtual bool ReplaceRowVector(const int idx, const BaseVector<ValueType> &vec);
+  virtual bool ExtractRowVector(const int idx, BaseVector<ValueType> *vec) const;
+
+  virtual bool AMGConnect(const ValueType eps, BaseVector<int> *connections) const;
+  virtual bool AMGAggregate(const BaseVector<int> &connections, BaseVector<int> *aggregates) const;
+  virtual bool AMGSmoothedAggregation(const ValueType relax,
                                       const BaseVector<int> &aggregates,
                                       const BaseVector<int> &connections,
                                             BaseMatrix<ValueType> *prolong,
                                             BaseMatrix<ValueType> *restrict) const;
-  virtual void AMGAggregation(const BaseVector<int> &aggregates,
+  virtual bool AMGAggregation(const BaseVector<int> &aggregates,
                                     BaseMatrix<ValueType> *prolong,
                                     BaseMatrix<ValueType> *restrict) const;
 
   virtual bool FSAI(const int power, const BaseMatrix<ValueType> *pattern);
-  virtual void SPAI(void);
+  virtual bool SPAI(void);
 
 private:
 
@@ -199,7 +213,7 @@ private:
 
 #ifdef SUPPORT_MKL
 
-  double *mkl_tmp_vec_;
+  ValueType *mkl_tmp_vec_;
 
 #endif
 

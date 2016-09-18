@@ -1,8 +1,15 @@
-// *************************************************************************
+// **************************************************************************
 //
 //    PARALUTION   www.paralution.com
 //
-//    Copyright (C) 2012-2014 Dimitar Lukarski
+//    Copyright (C) 2015  PARALUTION Labs UG (haftungsbeschränkt) & Co. KG
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRA 706051
+//                        Vertreten durch:
+//                        PARALUTION Labs Verwaltungs UG (haftungsbeschränkt)
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRB 721277
+//                        Geschäftsführer: Dimitar Lukarski, Nico Trost
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -17,17 +24,18 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// *************************************************************************
+// **************************************************************************
 
 
 
-// PARALUTION version 0.7.0b 
+// PARALUTION version 1.0.0 
 
 
 #ifndef PARALUTION_BACKEND_MANAGER_HPP_
 #define PARALUTION_BACKEND_MANAGER_HPP_
 
 #include <iostream>
+#include <fstream>
 
 namespace paralution {
 
@@ -45,11 +53,12 @@ struct Paralution_Backend_Descriptor {
 
   // set by initbackend();
   bool init;
-  
+
   // current backend
   int backend;
   bool accelerator;
-  
+  bool disable_accelerator;
+
   // OpenMP threads
   int OpenMP_threads;
   // OpenMP threads before PARALUTION init
@@ -67,9 +76,9 @@ struct Paralution_Backend_Descriptor {
   void *GPU_cublas_handle;
   // cusparseHandle_t casted in void **
   void *GPU_cusparse_handle;
-  
+
   int GPU_dev;
-  int GPU_wrap;
+  int GPU_warp;
   int GPU_block_size;
   int GPU_max_threads;
 
@@ -85,6 +94,12 @@ struct Paralution_Backend_Descriptor {
 
   // MIC section
   int MIC_dev;
+
+  // Software marker 
+  // DO NOT REMOVE
+  char marker[15];
+  
+  std::ofstream *log_file;
 };
   
 /// Global backend descriptor
@@ -149,8 +164,11 @@ void info_paralution(const struct Paralution_Backend_Descriptor backend_descript
 /// Return true if any accelerator is available
 bool _paralution_available_accelerator(void);
 
+/// Disable/Enable the accelerator
+void disable_accelerator_paralution(const bool onoff=true);
+
 /// Return backend descriptor
-void _get_backend_descriptor(struct Paralution_Backend_Descriptor *backend_descriptor);
+struct Paralution_Backend_Descriptor *_get_backend_descriptor(void);
 
 /// Set backend descriptor
 void _set_backend_descriptor(const struct Paralution_Backend_Descriptor backend_descriptor);
@@ -173,9 +191,14 @@ template <typename ValueType>
 AcceleratorMatrix<ValueType>* _paralution_init_base_backend_matrix(const struct Paralution_Backend_Descriptor backend_descriptor,
                                                                    const unsigned int matrix_format);
 
-
 /// Sync the active async transfers
 void _paralution_sync(void);
+
+size_t _paralution_add_obj(class ParalutionObj* ptr);
+bool _paralution_del_obj(class ParalutionObj* ptr,
+                         size_t id);
+void _paralution_delete_all_obj(void);
+bool _paralution_check_if_any_obj(void);
 
 }
 

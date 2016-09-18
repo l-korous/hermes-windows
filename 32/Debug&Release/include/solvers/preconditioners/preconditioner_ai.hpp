@@ -1,8 +1,15 @@
-// *************************************************************************
+// **************************************************************************
 //
 //    PARALUTION   www.paralution.com
 //
-//    Copyright (C) 2012-2014 Dimitar Lukarski
+//    Copyright (C) 2015  PARALUTION Labs UG (haftungsbeschränkt) & Co. KG
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRA 706051
+//                        Vertreten durch:
+//                        PARALUTION Labs Verwaltungs UG (haftungsbeschränkt)
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRB 721277
+//                        Geschäftsführer: Dimitar Lukarski, Nico Trost
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -17,11 +24,11 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// *************************************************************************
+// **************************************************************************
 
 
 
-// PARALUTION version 0.7.0b 
+// PARALUTION version 1.0.0 
 
 
 #ifndef PARALUTION_PRECONDITIONER_AI_HPP_
@@ -144,7 +151,50 @@ private:
 };
 
 
+/// Truncated Neumann Series (TNS) Preconditioner
+template <class OperatorType, class VectorType, typename ValueType>
+class TNS : public Preconditioner<OperatorType, VectorType, ValueType> {
+
+public:
+
+  TNS();
+  virtual ~TNS();
+
+  virtual void Print(void) const;  
+  virtual void Set(const bool imp);
+  virtual void Solve(const VectorType &rhs, VectorType *x);
+  virtual void Build(void);
+  virtual void Clear(void);
+
+  virtual void SetPrecondMatrixFormat(const unsigned int mat_format);
+
+
+protected:
+
+  virtual void MoveToHostLocalData_(void);
+  virtual void MoveToAcceleratorLocalData_(void);
+
+
+private:
+
+  OperatorType L_;
+  OperatorType LT_;
+  OperatorType TNS_;
+  VectorType Dinv_;
+
+  VectorType tmp1_;
+  VectorType tmp2_;
+
+  /// Keep the precond matrix in CSR or not
+  bool op_mat_format_; 
+  /// Precond matrix format
+  unsigned int precond_mat_format_;
+  /// implicit (true) or explicit (false) computation 
+  bool impl_;
+
+};
+
+
 }
 
 #endif // PARALUTION_PRECONDITIONER_AI_HPP_
-

@@ -20,6 +20,7 @@
 #define __HERMES_COMMON_COMMON_H
 
 #include <complex>
+#include <vector>
 
 #include <stdexcept>
 #include <cstdarg>
@@ -43,14 +44,13 @@
 #include <cstdio>
 #include <stdarg.h>
 #include <sstream>
-#if defined _WINDOWS || defined _MSC_VER
+#ifdef _WINDOWS
 #include <memory>
 #else
 #include <tr1/memory>
 #endif
 #include <algorithm>
 #include <limits>
-#include <vector>
 #include <map>
 #include <set>
 #include <queue>

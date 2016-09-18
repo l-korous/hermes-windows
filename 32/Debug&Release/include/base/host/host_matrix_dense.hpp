@@ -1,8 +1,15 @@
-// *************************************************************************
+// **************************************************************************
 //
 //    PARALUTION   www.paralution.com
 //
-//    Copyright (C) 2012-2014 Dimitar Lukarski
+//    Copyright (C) 2015  PARALUTION Labs UG (haftungsbeschränkt) & Co. KG
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRA 706051
+//                        Vertreten durch:
+//                        PARALUTION Labs Verwaltungs UG (haftungsbeschränkt)
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRB 721277
+//                        Geschäftsführer: Dimitar Lukarski, Nico Trost
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -17,11 +24,11 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// *************************************************************************
+// **************************************************************************
 
 
 
-// PARALUTION version 0.7.0b 
+// PARALUTION version 1.0.0 
 
 
 #ifndef PARALUTION_HOST_MATRIX_DENSE_HPP_
@@ -35,7 +42,7 @@ namespace paralution {
 
 template <typename ValueType>
 class HostMatrixDENSE : public HostMatrix<ValueType> {
-  
+
 public:
 
   HostMatrixDENSE();
@@ -55,35 +62,41 @@ public:
   virtual void CopyFrom(const BaseMatrix<ValueType> &mat);
   virtual void CopyTo(BaseMatrix<ValueType> *mat) const;
 
-  virtual void Apply(const BaseVector<ValueType> &in, BaseVector<ValueType> *out) const; 
-  virtual void ApplyAdd(const BaseVector<ValueType> &in, const ValueType scalar, 
+  virtual void Apply(const BaseVector<ValueType> &in, BaseVector<ValueType> *out) const;
+  virtual void ApplyAdd(const BaseVector<ValueType> &in, const ValueType scalar,
                         BaseVector<ValueType> *out) const;
 
-  virtual void Householder(const int idx, ValueType &beta, BaseVector<ValueType> *vec);
-  virtual void QRDecompose(void);
-  virtual void QRSolve(const BaseVector<ValueType> &in, BaseVector<ValueType> *out) const;
+  virtual bool MatMatMult(const BaseMatrix<ValueType> &A, const BaseMatrix<ValueType> &B);
 
-  virtual void LUFactorize(void);
+  virtual bool Householder(const int idx, ValueType &beta, BaseVector<ValueType> *vec) const;
+  virtual bool QRDecompose(void);
+  virtual bool QRSolve(const BaseVector<ValueType> &in, BaseVector<ValueType> *out) const;
+
+  virtual bool LUFactorize(void);
   virtual bool LUSolve(const BaseVector<ValueType> &in, BaseVector<ValueType> *out) const;
 
-  virtual void Invert(void);
-  
+  virtual bool Invert(void);
+
+  virtual bool ReplaceColumnVector(const int idx, const BaseVector<ValueType> &vec);
+  virtual bool ReplaceRowVector(const int idx, const BaseVector<ValueType> &vec);
+  virtual bool ExtractColumnVector(const int idx, BaseVector<ValueType> *vec) const;
+  virtual bool ExtractRowVector(const int idx, BaseVector<ValueType> *vec) const;
+
 private:
-  
+
   MatrixDENSE<ValueType> mat_;
 
-  friend class BaseVector<ValueType>;  
-  friend class HostVector<ValueType>;  
+  friend class BaseVector<ValueType>;
+  friend class HostVector<ValueType>;
   friend class HostMatrixCSR<ValueType>;
   friend class HostMatrixCOO<ValueType>;
   friend class HostMatrixELL<ValueType>;
-  friend class HostMatrixHYB<ValueType>;  
+  friend class HostMatrixHYB<ValueType>;
   friend class HostMatrixDIA<ValueType>;
 
   friend class GPUAcceleratorMatrixDENSE<ValueType>;
   friend class OCLAcceleratorMatrixDENSE<ValueType>;
   friend class MICAcceleratorMatrixDENSE<ValueType>;
-
 
 };
 

@@ -1,8 +1,15 @@
-// *************************************************************************
+// **************************************************************************
 //
 //    PARALUTION   www.paralution.com
 //
-//    Copyright (C) 2012-2014 Dimitar Lukarski
+//    Copyright (C) 2015  PARALUTION Labs UG (haftungsbeschränkt) & Co. KG
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRA 706051
+//                        Vertreten durch:
+//                        PARALUTION Labs Verwaltungs UG (haftungsbeschränkt)
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRB 721277
+//                        Geschäftsführer: Dimitar Lukarski, Nico Trost
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -17,24 +24,25 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// *************************************************************************
+// **************************************************************************
 
 
 
-// PARALUTION version 0.7.0b 
+// PARALUTION version 1.0.0 
 
 
 #ifndef PARALUTION_SOLVER_HPP_
 #define PARALUTION_SOLVER_HPP_
 
 #include "iter_ctrl.hpp"
+#include "../base/base_paralution.hpp"
 #include "../base/local_vector.hpp"
 
 namespace paralution {
 
 /// The base class for all solvers and preconditioners
 template <class OperatorType, class VectorType, typename ValueType>
-class Solver {
+class Solver : public ParalutionObj {
 
 public:
 
@@ -46,12 +54,6 @@ public:
 
   /// Reset the operator; see ReBuildNumeric
   virtual void ResetOperator(const OperatorType &op);
-
-  /// Set the residual norm to L1 or L2 norm
-  /// resnorm == 1 L1 Norm
-  /// resnorm == 2 L2 Norm (default)
-  /// resnorm == 3 Inf Norm
-  void SetResidualNorm(const int resnorm);
 
   /// Print information about the solver
   virtual void Print(void) const = 0;
@@ -84,7 +86,7 @@ public:
   /// Provide verbose output of the solver:
   /// verb == 0 no output
   /// verb == 1 print info about the solver (start,end);
-  /// verb == 2 print (#iter, residual) via iteration control;
+  /// verb == 2 print (iter, residual) via iteration control;
   virtual void Verbose(const int verb=1);
 
 protected:
@@ -105,20 +107,8 @@ protected:
   /// Verbose flag
   /// verb == 0 no output
   /// verb == 1 print info about the solver (start,end);
-  /// verb == 2 print (#iter, residual) via iteration control;
+  /// verb == 2 print (iter, residual) via iteration control;
   int verb_;
-
-  /// Residual norm
-  /// res_norm = 1 L1 Norm
-  /// res_norm = 2 L2 Norm
-  /// res_norm = 3 Linf Norm
-  int res_norm_;
-
-  /// Absolute maximum index of residual vector when using Linf norm
-  int index_;
-
-  /// Computes the vector norm
-  ValueType Norm(const VectorType &vec);
 
   /// Print starting msg of the solver
   virtual void PrintStart_(void) const = 0;
@@ -143,18 +133,24 @@ public:
 
   /// Initialize the solver with absolute/relative/divergence 
   /// tolerance and maximum number of iterations
-  void Init(const ValueType abs_tol,
-            const ValueType rel_tol,
-            const ValueType div_tol,
+  void Init(const double abs_tol,
+            const double rel_tol,
+            const double div_tol,
             const int max_iter);
 
   /// Set the maximum number of iterations
   void InitMaxIter(const int max_iter);
 
   /// Set the absolute/relative/divergence tolerance
-  void InitTol(const ValueType abs,
-               const ValueType rel,
-               const ValueType div);
+  void InitTol(const double abs,
+               const double rel,
+               const double div);
+
+  /// Set the residual norm to L1, L2 or Inf norm
+  /// resnorm == 1 L1 Norm
+  /// resnorm == 2 L2 Norm (default)
+  /// resnorm == 3 Inf Norm
+  void SetResidualNorm(const int resnorm);
 
   /// Record the residual history
   void RecordResidualHistory(void);
@@ -174,7 +170,7 @@ public:
   virtual int GetIterationCount(void);
 
   /// Return the current residual
-  virtual ValueType GetCurrentResidual(void);
+  virtual double GetCurrentResidual(void);
 
   /// Return the current status
   virtual int GetSolverStatus(void);
@@ -185,7 +181,7 @@ public:
 protected:
 
   /// Iteration control (monitor)
-  IterationControl<ValueType> iter_ctrl_;
+  IterationControl iter_ctrl_;
 
   /// Non-preconditioner solution procedure
   virtual void SolveNonPrecond_(const VectorType &rhs,
@@ -194,6 +190,18 @@ protected:
   /// Preconditioned solution procedure
   virtual void SolvePrecond_(const VectorType &rhs,
                              VectorType *x) = 0;
+
+  /// Residual norm
+  /// res_norm = 1 L1 Norm
+  /// res_norm = 2 L2 Norm
+  /// res_norm = 3 Linf Norm
+  int res_norm_;
+
+  /// Absolute maximum index of residual vector when using Linf norm
+  int index_;
+
+  /// Computes the vector norm
+  ValueType Norm(const VectorType &vec);
 
 };
 
@@ -263,4 +271,3 @@ protected:
 }
 
 #endif // PARALUTION_SOLVER_HPP_
-

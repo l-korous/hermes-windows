@@ -1,8 +1,15 @@
-// *************************************************************************
+// **************************************************************************
 //
 //    PARALUTION   www.paralution.com
 //
-//    Copyright (C) 2012-2014 Dimitar Lukarski
+//    Copyright (C) 2015  PARALUTION Labs UG (haftungsbeschränkt) & Co. KG
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRA 706051
+//                        Vertreten durch:
+//                        PARALUTION Labs Verwaltungs UG (haftungsbeschränkt)
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRB 721277
+//                        Geschäftsführer: Dimitar Lukarski, Nico Trost
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -17,11 +24,11 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// *************************************************************************
+// **************************************************************************
 
 
 
-// PARALUTION version 0.7.0b 
+// PARALUTION version 1.0.0 
 
 
 #ifndef PARALUTION_BASE_VECTOR_HPP_
@@ -30,7 +37,6 @@
 #include "backend_manager.hpp"
 
 namespace paralution {
-
 
 // Forward declarations
 template <typename ValueType>
@@ -51,7 +57,7 @@ class MICAcceleratorVector;
 /// Base class for all host/accelerator vectors
 template <typename ValueType>
 class BaseVector {
-  
+
 public:
 
   BaseVector();
@@ -62,7 +68,7 @@ public:
 
   /// Returns the size of the vector
   int get_size(void) const;
-  
+
   /// Copy the backend descriptor information
   void set_backend(const Paralution_Backend_Descriptor local_backend);
 
@@ -121,6 +127,9 @@ public:
   virtual void CopyFromPermuteBackward(const BaseVector<ValueType> &src,
                                        const BaseVector<int> &permutation) = 0;
 
+  virtual void CopyFromData(const ValueType *data);
+  virtual void CopyToData(ValueType *data) const;
+
   /// Restriction operator based on restriction mapping vector
   virtual bool Restriction(const BaseVector<ValueType> &vec_fine, const BaseVector<int> &map);
 
@@ -140,10 +149,10 @@ public:
                              const int src_offset,
                              const int dst_offset,
                              const int size) = 0;
-  
+
   /// Perform vector update of type this = alpha*this + x*beta + y*gamma
-  virtual void ScaleAdd2(const ValueType alpha, const BaseVector<ValueType> &x, 
-                         const ValueType beta, const BaseVector<ValueType> &y, 
+  virtual void ScaleAdd2(const ValueType alpha, const BaseVector<ValueType> &x,
+                         const ValueType beta, const BaseVector<ValueType> &y,
                          const ValueType gamma) = 0;
   /// Perform vector scaling this = alpha*this
   virtual void Scale(const ValueType alpha) = 0;
@@ -151,6 +160,8 @@ public:
   virtual void PartialSum(const BaseVector<ValueType> &x) = 0;
   /// Compute dot (scalar) product, return this^T y
   virtual ValueType Dot(const BaseVector<ValueType> &x) const = 0;
+  /// Compute non-conjugated dot (scalar) product, return this^T y
+  virtual ValueType DotNonConj(const BaseVector<ValueType> &x) const = 0;
   /// Compute L2 norm of the vector, return =  srqt(this^T this)
   virtual ValueType Norm(void) const = 0;
   /// Reduce vector
@@ -163,7 +174,7 @@ public:
   virtual void PointWiseMult(const BaseVector<ValueType> &x) = 0;
   /// Perform point-wise multiplication (element-wise) of type this = x*y
   virtual void PointWiseMult(const BaseVector<ValueType> &x, const BaseVector<ValueType> &y) = 0;
-
+  virtual void Power(const double power) = 0;
 
 protected:
 
@@ -172,14 +183,12 @@ protected:
 
   /// Backend descriptor (local copy)
   Paralution_Backend_Descriptor local_backend_;
- 
+
 };
-
-
 
 template <typename ValueType>
 class AcceleratorVector : public BaseVector<ValueType> {
-  
+
 public:
 
   AcceleratorVector();

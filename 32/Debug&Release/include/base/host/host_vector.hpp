@@ -1,8 +1,15 @@
-// *************************************************************************
+// **************************************************************************
 //
 //    PARALUTION   www.paralution.com
 //
-//    Copyright (C) 2012-2014 Dimitar Lukarski
+//    Copyright (C) 2015  PARALUTION Labs UG (haftungsbeschränkt) & Co. KG
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRA 706051
+//                        Vertreten durch:
+//                        PARALUTION Labs Verwaltungs UG (haftungsbeschränkt)
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRB 721277
+//                        Geschäftsführer: Dimitar Lukarski, Nico Trost
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -17,11 +24,11 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// *************************************************************************
+// **************************************************************************
 
 
 
-// PARALUTION version 0.7.0b 
+// PARALUTION version 1.0.0 
 
 
 #ifndef PARALUTION_HOST_VECTOR_HPP_
@@ -29,6 +36,9 @@
 
 #include "../base_vector.hpp"
 #include "../base_matrix.hpp"
+#include "../base_stencil.hpp"
+
+#include <complex>
 
 namespace paralution {
 
@@ -37,7 +47,7 @@ class LocalVector;
 
 template <typename ValueType>
 class HostVector : public BaseVector<ValueType> {
-  
+
 public:
 
   HostVector();
@@ -71,8 +81,11 @@ public:
   virtual void CopyFromPermuteBackward(const BaseVector<ValueType> &src,
                                        const BaseVector<int> &permutation);
 
+  virtual void CopyFromData(const ValueType *data);
+  virtual void CopyToData(ValueType *data) const;
+
   virtual void Permute(const BaseVector<int> &permutation);
-  virtual void PermuteBackward(const BaseVector<int> &permutation);  
+  virtual void PermuteBackward(const BaseVector<int> &permutation);
 
   virtual bool Restriction(const BaseVector<ValueType> &vec_fine, const BaseVector<int> &map);
   virtual bool Prolongation(const BaseVector<ValueType> &vec_coarse, const BaseVector<int> &map);
@@ -93,15 +106,19 @@ public:
   // this = alpha*this + x*beta
   virtual void ScaleAddScale(const ValueType alpha, const BaseVector<ValueType> &x, const ValueType beta);
   virtual void ScaleAddScale(const ValueType alpha, const BaseVector<ValueType> &x, const ValueType beta,
-                             const int src_offset, const int dst_offset,const int size);  
+                             const int src_offset, const int dst_offset,const int size);
   // this = alpha*this + x*beta + y*gamma
-  virtual void ScaleAdd2(const ValueType alpha, const BaseVector<ValueType> &x, const ValueType beta, const BaseVector<ValueType> &y, const ValueType gamma) ;
+  virtual void ScaleAdd2(const ValueType alpha, const BaseVector<ValueType> &x,
+                         const ValueType beta, const BaseVector<ValueType> &y,
+                         const ValueType gamma);
   // this = alpha*this
   virtual void Scale(const ValueType alpha);
   // Compute partial sum
   virtual void PartialSum(const BaseVector<ValueType> &x);
   // this^T x
   virtual ValueType Dot(const BaseVector<ValueType> &x) const;
+  // this^T x
+  virtual ValueType DotNonConj(const BaseVector<ValueType> &x) const;
   // srqt(this^T this)
   virtual ValueType Norm(void) const;
   // reduce vector
@@ -113,16 +130,20 @@ public:
   // point-wise multiplication
   virtual void PointWiseMult(const BaseVector<ValueType> &x);
   virtual void PointWiseMult(const BaseVector<ValueType> &x, const BaseVector<ValueType> &y);
+  virtual void Power(const double power);
+
 
 private:
 
-  ValueType *vec_; 
+  ValueType *vec_;
 
   // for [] operator in LocalVector
   friend class LocalVector<ValueType>;
 
   friend class HostVector<double>;
   friend class HostVector<float>;
+  friend class HostVector<std::complex<double> >;
+  friend class HostVector<std::complex<float> >;
   friend class HostVector<int>;
 
   friend class HostMatrix<ValueType>;
@@ -137,13 +158,20 @@ private:
 
   friend class HostMatrixCOO<float>;
   friend class HostMatrixCOO<double>;
+  friend class HostMatrixCOO<std::complex<float> >;
+  friend class HostMatrixCOO<std::complex<double> >;
 
   friend class HostMatrixCSR<double>;
   friend class HostMatrixCSR<float>;
+  friend class HostMatrixCSR<std::complex<float> >;
+  friend class HostMatrixCSR<std::complex<double> >;
 
   friend class GPUAcceleratorVector<ValueType>;
   friend class OCLAcceleratorVector<ValueType>;
   friend class MICAcceleratorVector<ValueType>;
+
+  friend class HostStencil<ValueType>;
+  friend class HostStencilLaplace2D<ValueType>;
 
 };
 
@@ -151,4 +179,3 @@ private:
 }
 
 #endif // PARALUTION_HOST_VECTOR_HPP_
-

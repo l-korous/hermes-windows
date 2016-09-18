@@ -1,8 +1,15 @@
-// *************************************************************************
+// **************************************************************************
 //
 //    PARALUTION   www.paralution.com
 //
-//    Copyright (C) 2012-2014 Dimitar Lukarski
+//    Copyright (C) 2015  PARALUTION Labs UG (haftungsbeschränkt) & Co. KG
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRA 706051
+//                        Vertreten durch:
+//                        PARALUTION Labs Verwaltungs UG (haftungsbeschränkt)
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRB 721277
+//                        Geschäftsführer: Dimitar Lukarski, Nico Trost
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -17,11 +24,11 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// *************************************************************************
+// **************************************************************************
 
 
 
-// PARALUTION version 0.7.0b 
+// PARALUTION version 1.0.0 
 
 
 #ifndef PARALUTION_PRECONDITIONER_HPP_
@@ -193,10 +200,10 @@ public:
                      VectorType *x);
 
   /// ILUT with threshold
-  virtual void Set(const ValueType t);
+  virtual void Set(const double t);
 
   /// ILUT with threshold and maximum number of elements per row
-  virtual void Set(const ValueType t, const int maxrow);
+  virtual void Set(const double t, const int maxrow);
 
   virtual void Build(void);
   virtual void Clear(void);  
@@ -211,7 +218,7 @@ protected:
 private:
 
   OperatorType ILUT_;
-  ValueType t_;
+  double t_;
   int max_row_;
 
 };
@@ -249,4 +256,3 @@ private:
 }
 
 #endif // PARALUTION_PRECONDITIONER_HPP_
-

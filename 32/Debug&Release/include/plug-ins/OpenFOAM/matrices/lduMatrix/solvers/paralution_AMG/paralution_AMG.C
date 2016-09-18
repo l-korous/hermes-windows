@@ -83,18 +83,13 @@ Foam::paralution_AMG::paralution_AMG
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-Foam::lduMatrix::solverPerformance Foam::paralution_AMG::solve
+Foam::solverPerformance Foam::paralution_AMG::solve
 (
     scalarField& psi,
     const scalarField& source,
     const direction cmpt
 ) const
 {
-
-  // Time measurement
-//    double fullsolver_begin, fullsolver_end;
-  
-//    fullsolver_begin = paralution_time();
 
     word precond_name = lduMatrix::preconditioner::getName(controlDict_);
     double div   = controlDict_.lookupOrDefault<double>("div", 1e+08);
@@ -103,7 +98,7 @@ Foam::lduMatrix::solverPerformance Foam::paralution_AMG::solve
     word pformat = controlDict_.lookupOrDefault<word>("PrecondFormat", "CSR");
     word sformat = controlDict_.lookupOrDefault<word>("SmootherFormat", "CSR");
     word solver_name = controlDict_.lookupOrDefault<word>("CoarseGridSolver", "CG");
-    word smoother_name = controlDict_.lookupOrDefault<word>("smoother", "MultiColoredGS");
+    word smoother_name = controlDict_.lookupOrDefault<word>("smoother", "paralution_MultiColoredGS");
     int MEp      = controlDict_.lookupOrDefault<int>("MEp", 1);
     word LBPre   = controlDict_.lookupOrDefault<word>("LastBlockPrecond", "paralution_Jacobi");
     int iterPreSmooth = controlDict_.lookupOrDefault<int>("nPreSweeps", 1);
@@ -117,7 +112,7 @@ Foam::lduMatrix::solverPerformance Foam::paralution_AMG::solve
     bool scaling = controlDict_.lookupOrDefault<bool>("scaleCorrection", true);
     word interp_name = controlDict_.lookupOrDefault<word>("InterpolationType", "SmoothedAggregation");
 
-    lduMatrix::solverPerformance solverPerf(typeName + '(' + precond_name + ')', fieldName_);
+    solverPerformance solverPerf(typeName + '(' + precond_name + ')', fieldName_);
 
     register label nCells = psi.size();
 
@@ -153,8 +148,6 @@ Foam::lduMatrix::solverPerformance Foam::paralution_AMG::solve
       if      (interp_name == "SmoothedAggregation") ip = paralution::SmoothedAggregation;
       else if (interp_name == "Aggregation")         ip = paralution::Aggregation;
 
-      paralution::init_paralution();
-
       paralution::LocalVector<double> x;
       paralution::LocalVector<double> rhs;
       paralution::LocalMatrix<double> mat;
@@ -163,13 +156,11 @@ Foam::lduMatrix::solverPerformance Foam::paralution_AMG::solve
                       paralution::LocalVector<double>,
                       double> ls;
 
-      import_openfoam_matrix(matrix(), &mat);
-      import_openfoam_vector(source, &rhs);
-      import_openfoam_vector(psi, &x);
+      paralution::import_openfoam_matrix(matrix(), &mat);
+      paralution::import_openfoam_vector(source, &rhs);
+      paralution::import_openfoam_vector(psi, &x);
 
       ls.SetOperator(mat);
-
-//      std::cout << "AMG Building..." << std::endl;
 
       // coupling strength
       ls.SetCouplingStrength(epsCoupling);
@@ -209,8 +200,8 @@ Foam::lduMatrix::solverPerformance Foam::paralution_AMG::solve
                                           double >*[levels-1];
 
       for (int i=0; i<levels-1; ++i) {
-        fp[i] = GetIterativeLinearSolver<double>("paralution_FixedPoint", relax);
-        sm[i] = GetPreconditioner<double>(smoother_name, LBPre, sformat, ILUp, ILUq, MEp);
+        fp[i] = paralution::GetIterativeLinearSolver<double>("paralution_FixedPoint", relax);
+        sm[i] = paralution::GetPreconditioner<double>(smoother_name, LBPre, sformat, ILUp, ILUq, MEp);
         fp[i]->SetPreconditioner(*sm[i]);
         fp[i]->Verbose(0);
       }
@@ -219,12 +210,12 @@ Foam::lduMatrix::solverPerformance Foam::paralution_AMG::solve
       paralution::IterativeLinearSolver<paralution::LocalMatrix<double>,
                                         paralution::LocalVector<double>,
                                         double > *cgs = NULL;
-      cgs = GetIterativeLinearSolver<double>(solver_name, relax);
+      cgs = paralution::GetIterativeLinearSolver<double>(solver_name, relax);
       cgs->Verbose(0);
       paralution::Preconditioner<paralution::LocalMatrix<double>,
                                  paralution::LocalVector<double>,
                                  double > *cgp = NULL;
-      cgp = GetPreconditioner<double>(precond_name, LBPre, pformat, ILUp, ILUq, MEp);
+      cgp = paralution::GetPreconditioner<double>(precond_name, LBPre, pformat, ILUp, ILUq, MEp);
       if (cgp != NULL) cgs->SetPreconditioner(*cgp);
 
       ls.SetSmoother(fp);
@@ -274,18 +265,12 @@ Foam::lduMatrix::solverPerformance Foam::paralution_AMG::solve
           break;
       }
 
-//      mat.info();
       ls.Verbose(0);
-
-//      parasolve_begin = paralution_time();
 
       // Solve linear system
       ls.Solve(rhs, &x);
 
-//      parasolve_end = paralution_time();
-//      std::cout << "AMG.Solve() execution: " << (parasolve_end-parasolve_begin)/1000000 << " sec" << std::endl;
-
-      export_openfoam_vector(x, &psi);
+      paralution::export_openfoam_vector(x, &psi);
 
       solverPerf.finalResidual()   = ls.GetCurrentResidual() / normFactor; // divide by normFactor, see lduMatrixSolver.C
       solverPerf.nIterations()     = ls.GetIterationCount();
@@ -308,12 +293,7 @@ Foam::lduMatrix::solverPerformance Foam::paralution_AMG::solve
       delete[] sm;
       delete cgs;
 
-      paralution::stop_paralution();
-
     }
-
-//    fullsolver_end = paralution_time();
-//    std::cout << "OpenFOAM.Solve() execution: " << (fullsolver_end-fullsolver_begin)/1000000 << " sec\n";
 
     return solverPerf;
 

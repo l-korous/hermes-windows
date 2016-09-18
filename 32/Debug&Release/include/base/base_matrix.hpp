@@ -1,8 +1,15 @@
-// *************************************************************************
+// **************************************************************************
 //
 //    PARALUTION   www.paralution.com
 //
-//    Copyright (C) 2012-2014 Dimitar Lukarski
+//    Copyright (C) 2015  PARALUTION Labs UG (haftungsbeschränkt) & Co. KG
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRA 706051
+//                        Vertreten durch:
+//                        PARALUTION Labs Verwaltungs UG (haftungsbeschränkt)
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRB 721277
+//                        Geschäftsführer: Dimitar Lukarski, Nico Trost
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -17,11 +24,11 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// *************************************************************************
+// **************************************************************************
 
 
 
-// PARALUTION version 0.7.0b 
+// PARALUTION version 1.0.0 
 
 
 #ifndef PARALUTION_BASE_MATRIX_HPP_
@@ -32,7 +39,7 @@
 #include <vector>
 
 namespace paralution {
-  
+
 // Forward declartions
 template <typename ValueType>
 class HostMatrix;
@@ -116,7 +123,7 @@ class MICAcceleratorMatrixDENSE;
 /// Base class for all host/accelerator matrices
 template <typename ValueType>
 class BaseMatrix {
-  
+
 public:
 
   BaseMatrix();
@@ -131,7 +138,7 @@ public:
   /// Shows simple info about the object
   virtual void info(void) const = 0;
   /// Return the matrix format id (see matrix_formats.hpp)
-  virtual unsigned int get_mat_format(void) const = 0 ;
+  virtual unsigned int get_mat_format(void) const = 0;
   /// Copy the backend descriptor information
   virtual void set_backend(const Paralution_Backend_Descriptor local_backend);
 
@@ -165,6 +172,18 @@ public:
   /// Leave a CSR matrix to Host pointers
   virtual void LeaveDataPtrCSR(int **row_offset, int **col, ValueType **val);
 
+  /// Initialize an ELL matrix on the Host with externally allocated data
+  virtual void SetDataPtrELL(int **col, ValueType **val,
+                             const int nnz, const int nrow, const int ncol, const int max_row);
+  /// Leave an ELL matrix to Host pointers
+  virtual void LeaveDataPtrELL(int **col, ValueType **val, int &max_row);
+
+  /// Initialize a DIA matrix on the Host with externally allocated data
+  virtual void SetDataPtrDIA(int **offset, ValueType **val,
+                             const int nnz, const int nrow, const int ncol, const int num_diag);
+  /// Leave a DIA matrix to Host pointers
+  virtual void LeaveDataPtrDIA(int **offset, ValueType **val, int &num_diag);
+
   /// Initialize a DENSE matrix on the Host with externally allocated data
   virtual void SetDataPtrDENSE(ValueType **val, const int nrow, const int ncol);
   /// Leave a DENSE matrix to Host pointers
@@ -174,17 +193,17 @@ public:
   virtual void Clear(void) = 0;
 
   /// Set all the values to zero
-  virtual void Zeros(void);
+  virtual bool Zeros(void);
 
   /// Assembling
-  virtual void Assemble(const int *i, const int *j, const ValueType *v,
+  virtual bool Assemble(const int *i, const int *j, const ValueType *v,
                         const int size, const int n, const int m,
                         int **pp_assembly_rank,
                         int **pp_assembly_irank,
                         int **pp_assembly_loop_start,
                         int **pp_assembly_loop_end,
                         int &nThreads);
-  virtual void AssembleUpdate(const ValueType *v,
+  virtual bool AssembleUpdate(const ValueType *v,
                               const int *assembly_rank,
                               const int *assembly_irank,
                               const int *assembly_loop_start,
@@ -210,7 +229,7 @@ public:
                                 const int row_size,
                                 const int col_size,
                                 BaseMatrix<ValueType> *mat) const;
-  
+
   /// Extract the diagonal values of the matrix into a LocalVector
   virtual bool ExtractDiagonal(BaseVector<ValueType> *vec_diag) const;
   /// Extract the inverse (reciprocal) diagonal values of the matrix into a LocalVector
@@ -235,24 +254,20 @@ public:
   /// Create permutation vector for reverse CMK reordering of the matrix
   virtual bool RCMK(BaseVector<int> *permutation) const;
 
-  /// Perform multi-coloring decomposition of the matrix; Returns number of 
-  /// colors, the corresponding sizes (the array is allocated in the function) 
+  /// Perform multi-coloring decomposition of the matrix; Returns number of
+  /// colors, the corresponding sizes (the array is allocated in the function)
   /// and the permutation
-  virtual bool MultiColoring(int &num_colors,
-                             int **size_colors,
-                             BaseVector<int> *permutation) const;
+  virtual bool MultiColoring(int &num_colors, int **size_colors, BaseVector<int> *permutation) const;
 
   /// Perform maximal independent set decomposition of the matrix; Returns the 
   /// size of the maximal independent set and the corresponding permutation
-  virtual bool MaximalIndependentSet(int &size,
-                                     BaseVector<int> *permutation) const;
+  virtual bool MaximalIndependentSet(int &size, BaseVector<int> *permutation) const;
 
   /// Return a permutation for saddle-point problems (zero diagonal entries),
   /// where all zero diagonal elements are mapped to the last block;
   /// the return size is the size of the first block
-  virtual void ZeroBlockPermutation(int &size,
-                                    BaseVector<int> *permutation) const;
-  
+  virtual bool ZeroBlockPermutation(int &size, BaseVector<int> *permutation) const;
+
   /// Convert the matrix from another matrix (with different structure)
   virtual bool ConvertFrom(const BaseMatrix<ValueType> &mat) = 0;
 
@@ -277,53 +292,59 @@ public:
   /// Copy from COO array (the matrix has to be allocated)
   virtual void CopyFromCOO(const int *row, const int *col, const ValueType *val);
 
+  /// Copy to COO array (the arrays have to be allocated)
+  virtual void CopyToCOO(int *row, int *col, ValueType *val) const;
+
   /// Create a restriction matrix operator based on an int vector map
   virtual bool CreateFromMap(const BaseVector<int> &map, const int n, const int m);
 
   /// Read matrix from MTX (Matrix Market Format) file
-  virtual void ReadFileMTX(const std::string filename);
+  virtual bool ReadFileMTX(const std::string filename);
   /// Write matrix to MTX (Matrix Market Format) file
-  virtual void WriteFileMTX(const std::string filename) const;
+  virtual bool WriteFileMTX(const std::string filename) const;
 
   /// Read matrix from CSR (PARALUTION binary format) file
-  virtual void ReadFileCSR(const std::string filename);
+  virtual bool ReadFileCSR(const std::string filename);
   /// Write matrix to CSR (PARALUTION binary format) file
-  virtual void WriteFileCSR(const std::string filename) const;
+  virtual bool WriteFileCSR(const std::string filename) const;
 
   /// Perform symbolic computation (structure only) of |this|^p
-  virtual void SymbolicPower(const int p);
+  virtual bool SymbolicPower(const int p);
 
-  /// Perform symbolic matrix-matrix multiplication (i.e. determine the structure), 
+  /// Perform symbolic matrix-matrix multiplication (i.e. determine the structure),
   /// this = this*src
-  virtual void SymbolicMatMatMult(const BaseMatrix<ValueType> &src);
+  virtual bool SymbolicMatMatMult(const BaseMatrix<ValueType> &src);
   /// Multiply two matrices, this = A * B
   virtual bool MatMatMult(const BaseMatrix<ValueType> &A, const BaseMatrix<ValueType> &B);
-  /// Perform symbolic matrix-matrix multiplication (i.e. determine the structure), 
+  /// Perform symbolic matrix-matrix multiplication (i.e. determine the structure),
   /// this = A*B
-  virtual void SymbolicMatMatMult(const BaseMatrix<ValueType> &A, const BaseMatrix<ValueType> &B);
-  /// Perform numerical matrix-matrix multiplication (i.e. value computation), 
+  virtual bool SymbolicMatMatMult(const BaseMatrix<ValueType> &A, const BaseMatrix<ValueType> &B);
+  /// Perform numerical matrix-matrix multiplication (i.e. value computation),
   /// this = A*B
-  virtual void NumericMatMatMult(const BaseMatrix<ValueType> &A, const BaseMatrix<ValueType> &B);
-  /// Multiply the matrix with diagonal matrix (stored in LocalVector), 
-  /// this=this*diag
-  virtual bool DiagonalMatrixMult(const BaseVector<ValueType> &diag);
-  /// Perform matrix addition, this = alpha*this + beta*mat; 
-  /// if structure==false the structure of the matrix is not changed, 
+  virtual bool NumericMatMatMult(const BaseMatrix<ValueType> &A, const BaseMatrix<ValueType> &B);
+  /// Multiply the matrix with diagonal matrix (stored in LocalVector),
+  /// this=this*diag (right multiplication)
+  virtual bool DiagonalMatrixMultR(const BaseVector<ValueType> &diag);
+  /// Multiply the matrix with diagonal matrix (stored in LocalVector),
+  /// this=diag*this (left multiplication)
+  virtual bool DiagonalMatrixMultL(const BaseVector<ValueType> &diag);
+  /// Perform matrix addition, this = alpha*this + beta*mat;
+  /// if structure==false the structure of the matrix is not changed,
   /// if structure==true new data structure is computed
-  virtual bool MatrixAdd(const BaseMatrix<ValueType> &mat, const ValueType alpha, 
+  virtual bool MatrixAdd(const BaseMatrix<ValueType> &mat, const ValueType alpha,
                          const ValueType beta, const bool structure);
 
   /// Perform ILU(0) factorization
   virtual bool ILU0Factorize(void);
   /// Perform LU factorization
-  virtual void LUFactorize(void);
+  virtual bool LUFactorize(void);
   /// Perform ILU(t,m) factorization based on threshold and maximum
   /// number of elements per row
-  virtual bool ILUTFactorize(const ValueType t, const int maxrow);
-  /// Perform ILU(p) factorization based on power (see power(q)-pattern method, D. Lukarski 
-  ///  "Parallel Sparse Linear Algebra for Multi-core and Many-core Platforms - Parallel Solvers and 
-  /// Preconditioners", PhD Thesis, 2012, KIT) 
-  virtual void ILUpFactorizeNumeric(const int p, const BaseMatrix<ValueType> &mat);
+  virtual bool ILUTFactorize(const double t, const int maxrow);
+  /// Perform ILU(p) factorization based on power (see power(q)-pattern method, D. Lukarski
+  ///  "Parallel Sparse Linear Algebra for Multi-core and Many-core Platforms - Parallel Solvers and
+  /// Preconditioners", PhD Thesis, 2012, KIT)
+  virtual bool ILUpFactorizeNumeric(const int p, const BaseMatrix<ValueType> &mat);
 
   /// Perform IC(0) factorization
   virtual bool ICFactorize(BaseVector<ValueType> *inv_diag);
@@ -332,15 +353,15 @@ public:
   virtual void LUAnalyse(void);
   /// Delete the analysed data (see LUAnalyse)
   virtual void LUAnalyseClear(void);
-  /// Solve LU out = in; if level-scheduling algorithm is provided then the graph 
+  /// Solve LU out = in; if level-scheduling algorithm is provided then the graph
   /// traversing is performed in parallel
-  virtual bool LUSolve(const BaseVector<ValueType> &in, BaseVector<ValueType> *out) const; 
+  virtual bool LUSolve(const BaseVector<ValueType> &in, BaseVector<ValueType> *out) const;
 
   /// Analyse the structure (level-scheduling)
   virtual void LLAnalyse(void);
   /// Delete the analysed data (see LLAnalyse)
   virtual void LLAnalyseClear(void);
-  /// Solve LL^T out = in; if level-scheduling algorithm is provided then the graph 
+  /// Solve LL^T out = in; if level-scheduling algorithm is provided then the graph
   // traversing is performed in parallel
   virtual bool LLSolve(const BaseVector<ValueType> &in, BaseVector<ValueType> *out) const;
   virtual bool LLSolve(const BaseVector<ValueType> &in, const BaseVector<ValueType> &inv_diag,
@@ -352,7 +373,7 @@ public:
   virtual void LAnalyse(const bool diag_unit=false);
   /// Delete the analysed data (see LAnalyse) L-party
   virtual void LAnalyseClear(void);
-  /// Solve L out = in; if level-scheduling algorithm is provided then the 
+  /// Solve L out = in; if level-scheduling algorithm is provided then the
   /// graph traversing is performed in parallel
   virtual bool LSolve(const BaseVector<ValueType> &in, BaseVector<ValueType> *out) const;
 
@@ -362,46 +383,59 @@ public:
   virtual void UAnalyse(const bool diag_unit=false);
   /// Delete the analysed data (see UAnalyse) U-party
   virtual void UAnalyseClear(void);
-  /// Solve U out = in; if level-scheduling algorithm is provided then the 
+  /// Solve U out = in; if level-scheduling algorithm is provided then the
   /// graph traversing is performed in parallel
-  virtual bool USolve(const BaseVector<ValueType> &in, BaseVector<ValueType> *out) const; 
+  virtual bool USolve(const BaseVector<ValueType> &in, BaseVector<ValueType> *out) const;
 
   /// Compute Householder vector
-  virtual void Householder(const int idx, ValueType &beta, BaseVector<ValueType> *vec);
+  virtual bool Householder(const int idx, ValueType &beta, BaseVector<ValueType> *vec) const;
   /// QR Decomposition
-  virtual void QRDecompose(void);
+  virtual bool QRDecompose(void);
   /// Solve QR out = in
-  virtual void QRSolve(const BaseVector<ValueType> &in, BaseVector<ValueType> *out) const;
+  virtual bool QRSolve(const BaseVector<ValueType> &in, BaseVector<ValueType> *out) const;
 
   /// Invert this
-  virtual void Invert(void);
+  virtual bool Invert(void);
 
   /// Compute the spectrum approximation with Gershgorin circles theorem
-  virtual bool Gershgorin(ValueType &lambda_min,
-                          ValueType &lambda_max) const;
+  virtual bool Gershgorin(ValueType &lambda_min, ValueType &lambda_max) const;
 
   /// Apply the matrix to vector, out = this*in;
-  virtual void Apply(const BaseVector<ValueType> &in, BaseVector<ValueType> *out) const = 0; 
+  virtual void Apply(const BaseVector<ValueType> &in, BaseVector<ValueType> *out) const = 0;
   /// Apply and add the matrix to vector, out = out + scalar*this*in;
   virtual void ApplyAdd(const BaseVector<ValueType> &in, const ValueType scalar,
-                        BaseVector<ValueType> *out) const = 0; 
+                        BaseVector<ValueType> *out) const = 0;
 
   /// Delete all entries abs(a_ij) <= drop_off;
   /// the diagonal elements are never deleted
-  virtual bool Compress(const ValueType drop_off);
+  virtual bool Compress(const double drop_off);
 
   /// Transpose the matrix
   virtual bool Transpose(void);
 
-  // TODO needs some return value - bool vector about connections?
-  virtual void AMGConnect(const ValueType eps, BaseVector<int> *connections) const;
-  virtual void AMGAggregate(const BaseVector<int> &connections, BaseVector<int> *aggregates) const;
-  virtual void AMGSmoothedAggregation(const ValueType relax,
+  /// Sort the matrix indices
+  virtual bool Sort(void);
+
+  /// Replace a column vector of a matrix
+  virtual bool ReplaceColumnVector(const int idx, const BaseVector<ValueType> &vec);
+
+  /// Replace a column vector of a matrix
+  virtual bool ReplaceRowVector(const int idx, const BaseVector<ValueType> &vec);
+
+  /// Extract values from a column of a matrix to a vector
+  virtual bool ExtractColumnVector(const int idx, BaseVector<ValueType> *vec) const;
+
+  /// Extract values from a row of a matrix to a vector
+  virtual bool ExtractRowVector(const int idx, BaseVector<ValueType> *vec) const;
+
+  virtual bool AMGConnect(const ValueType eps, BaseVector<int> *connections) const;
+  virtual bool AMGAggregate(const BaseVector<int> &connections, BaseVector<int> *aggregates) const;
+  virtual bool AMGSmoothedAggregation(const ValueType relax,
                                       const BaseVector<int> &aggregates,
                                       const BaseVector<int> &connections,
                                             BaseMatrix<ValueType> *prolong,
                                             BaseMatrix<ValueType> *restrict) const;
-  virtual void AMGAggregation(const BaseVector<int> &aggregates,
+  virtual bool AMGAggregation(const BaseVector<int> &aggregates,
                                     BaseMatrix<ValueType> *prolong,
                                     BaseMatrix<ValueType> *restrict) const;
 
@@ -410,16 +444,16 @@ public:
   virtual bool FSAI(const int power, const BaseMatrix<ValueType> *pattern);
 
   /// SParse Approximate Inverse assembly for given system matrix pattern
-  virtual void SPAI(void);
+  virtual bool SPAI(void);
 
 protected:
-  
+
   /// Number of rows
   int nrow_;
   /// Number of columns
   int ncol_;
   /// Number of non-zero elements
-  int nnz_;  
+  int nnz_;
 
   /// Backend descriptor (local copy)
   Paralution_Backend_Descriptor local_backend_;
@@ -430,25 +464,24 @@ protected:
   friend class GPUAcceleratorVector<ValueType>;
   friend class OCLAcceleratorVector<ValueType>;
   friend class MICAcceleratorVector<ValueType>;
-  
-};
 
+};
 
 template <typename ValueType>
 class HostMatrix : public BaseMatrix<ValueType> {
-  
+
 public:
 
   HostMatrix();
   virtual ~HostMatrix();
-  
-};
 
+};
 
 template <typename ValueType>
 class AcceleratorMatrix : public BaseMatrix<ValueType> {
-  
+
 public:
+
   AcceleratorMatrix();
   virtual ~AcceleratorMatrix();
 
@@ -466,18 +499,15 @@ public:
 
 };
 
-
-
 template <typename ValueType>
 class GPUAcceleratorMatrix : public AcceleratorMatrix<ValueType> {
 
-public: 
+public:
 
   GPUAcceleratorMatrix();
   virtual ~GPUAcceleratorMatrix();
 
 };
-
 
 template <typename ValueType>
 class OCLAcceleratorMatrix : public AcceleratorMatrix<ValueType> {
@@ -492,12 +522,13 @@ public:
 template <typename ValueType>
 class MICAcceleratorMatrix : public AcceleratorMatrix<ValueType> {
 
-public: 
+public:
 
   MICAcceleratorMatrix();
   virtual ~MICAcceleratorMatrix();
 
 };
+
 
 }
 

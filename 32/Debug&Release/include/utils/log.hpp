@@ -1,8 +1,15 @@
-// *************************************************************************
+// **************************************************************************
 //
 //    PARALUTION   www.paralution.com
 //
-//    Copyright (C) 2012-2014 Dimitar Lukarski
+//    Copyright (C) 2015  PARALUTION Labs UG (haftungsbeschränkt) & Co. KG
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRA 706051
+//                        Vertreten durch:
+//                        PARALUTION Labs Verwaltungs UG (haftungsbeschränkt)
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRB 721277
+//                        Geschäftsführer: Dimitar Lukarski, Nico Trost
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -17,26 +24,28 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// *************************************************************************
+// **************************************************************************
 
 
 
-// PARALUTION version 0.7.0b 
+// PARALUTION version 1.0.0 
 
 
 #ifndef PARALUTION_UTILS_LOG_HPP_
 #define PARALUTION_UTILS_LOG_HPP_
 
+#include "def.hpp"
+#include "../base/backend_manager.hpp"
+
 #include <iostream>
 #include <stdlib.h>
 
-// Uncomment to define verbose level
-#define VERBOSE_LEVEL 2
+namespace paralution {
 
-// Uncomment for debug mode
-// #define DEBUG_MODE
+void _paralution_open_log_file(void);
+void _paralution_close_log_file(void);
 
-
+}
 
 // Do not edit
 #ifdef DEBUG_MODE
@@ -47,9 +56,20 @@
 #endif
 
 
+// Do not edit
+#ifdef LOG_FILE
+
+#define LOG_STREAM *(_get_backend_descriptor()->log_file)
+
+#else
+
+#define LOG_STREAM std::cout
+
+#endif
+
 // LOG INFO
 #define LOG_INFO(stream) {            \
-    std::cout << stream << std::endl; \
+    LOG_STREAM << stream << std::endl; \
   }
 
 
@@ -66,7 +86,7 @@
 
 #define LOG_VERBOSE_INFO(level, stream) {                       \
     if (level <= VERBOSE_LEVEL)                                 \
-      std::cout << stream << std::endl;                         \
+      LOG_STREAM << stream << std::endl;                         \
   }
 
 #else
@@ -80,7 +100,7 @@
 #ifdef DEBUG_MODE
 
 #define LOG_DEBUG(obj, fct, stream) {                            \
-    std::cout << "# Obj addr: " << obj                           \
+    LOG_STREAM << "# Obj addr: " << obj                           \
               << "; fct: " << fct                                \
               << " " << stream << std::endl;             \
   }
@@ -90,7 +110,6 @@
 #define LOG_DEBUG(obj, fct, stream) ;
 
 #endif
-
 
 
 #endif // PARALUTION_UTILS_LOG_HPP_

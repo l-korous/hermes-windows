@@ -1,8 +1,15 @@
-// *************************************************************************
+// **************************************************************************
 //
 //    PARALUTION   www.paralution.com
 //
-//    Copyright (C) 2012-2014 Dimitar Lukarski
+//    Copyright (C) 2015  PARALUTION Labs UG (haftungsbeschränkt) & Co. KG
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRA 706051
+//                        Vertreten durch:
+//                        PARALUTION Labs Verwaltungs UG (haftungsbeschränkt)
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRB 721277
+//                        Geschäftsführer: Dimitar Lukarski, Nico Trost
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -17,11 +24,11 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// *************************************************************************
+// **************************************************************************
 
 
 
-// PARALUTION version 0.7.0b 
+// PARALUTION version 1.0.0 
 
 
 #ifndef PARALUTION_LOCAL_VECTOR_HPP_
@@ -31,23 +38,18 @@
 #include "base_vector.hpp"
 #include "host/host_vector.hpp"
 
-
 namespace paralution {
 
 template <typename ValueType>
 class LocalMatrix;
-template <typename ValueType>
-class GlobalMatrix;
+
 template <typename ValueType>
 class LocalStencil;
-template <typename ValueType>
-class GlobalStencil;
-
 
 // Local vector
 template <typename ValueType>
 class LocalVector : public Vector<ValueType> {
-  
+
 public:
 
   LocalVector();
@@ -59,12 +61,10 @@ public:
   virtual void MoveToHostAsync(void);
   virtual void Sync(void);
 
-  virtual void info(void) const;   
+  virtual void info(void) const;
   virtual int get_size(void) const;
 
-  /// Return true if the vector is ok (empty vector is also ok)
-  //  and false if some of values are NaN
-  bool Check(void) const;
+  virtual bool Check(void) const;
 
   /// Allocate a local vector with name and size
   virtual void Allocate(std::string name, const int size);
@@ -78,7 +78,6 @@ public:
   void Assemble(const int *i, const ValueType *v,
                 int size, std::string name, const int n=0);
 
-
   virtual void Clear();
   virtual void Zeros();
   virtual void Ones();
@@ -90,20 +89,13 @@ public:
   /// Access operator (only for host data!)
   const ValueType& operator[](const int i) const;
 
-  /// Read vector from ASCII file
   virtual void ReadFileASCII(const std::string filename);
-  /// Write vector to ASCII file
   virtual void WriteFileASCII(const std::string filename) const;
-  /// Read vector from binary file
   virtual void ReadFileBinary(const std::string filename);
-  /// Write vector to binary file
   virtual void WriteFileBinary(const std::string filename) const;
 
   virtual void CopyFrom(const LocalVector<ValueType> &src);
-
-  // Async copy (only for the entire vector
   virtual void CopyFromAsync(const LocalVector<ValueType> &src);
-
   virtual void CopyFromFloat(const LocalVector<float> &src);
   virtual void CopyFromDouble(const LocalVector<double> &src);
 
@@ -124,6 +116,14 @@ public:
   /// Clone the entire vector (values,backend descr) from another LocalVector
   void CloneFrom(const LocalVector<ValueType> &src);
 
+  /// Copy (import) vector described in one array (values)
+  /// The object data has to be allocated (call Allocate first)
+  void CopyFromData(const ValueType *data);
+
+  /// Copy (export) vector described in one array (values)
+  /// The output array has to be allocated
+  void CopyToData(ValueType *data) const;
+
   /// Perform inplace permutation (forward) of the vector
   void Permute(const LocalVector<int> &permutation);
 
@@ -139,21 +139,24 @@ public:
   virtual void AddScale(const LocalVector<ValueType> &x, const ValueType alpha);
   virtual void ScaleAdd(const ValueType alpha, const LocalVector<ValueType> &x);
   virtual void ScaleAddScale(const ValueType alpha, const LocalVector<ValueType> &x, const ValueType beta);
-  virtual void ScaleAddScale(const ValueType alpha, const LocalVector<ValueType> &x, const ValueType beta,
-                             const int src_offset,
-                             const int dst_offset,
-                             const int size);
+  /// Perform vector update of type this = alpha*this + x*beta with offsets for a specified part of a vector
+  void ScaleAddScale(const ValueType alpha, const LocalVector<ValueType> &x, const ValueType beta,
+                     const int src_offset,
+                     const int dst_offset,
+                     const int size);
 
   virtual void ScaleAdd2(const ValueType alpha, const LocalVector<ValueType> &x, const ValueType beta, const LocalVector<ValueType> &y, const ValueType gamma);
   virtual void Scale(const ValueType alpha);
   virtual void PartialSum(const LocalVector<ValueType> &x);
   virtual ValueType Dot(const LocalVector<ValueType> &x) const;
+  virtual ValueType DotNonConj(const LocalVector<ValueType> &x) const;
   virtual ValueType Norm(void) const;
   virtual ValueType Reduce(void) const;
   virtual ValueType Asum(void) const;
   virtual int Amax(ValueType &value) const;
   virtual void PointWiseMult(const LocalVector<ValueType> &x);
   virtual void PointWiseMult(const LocalVector<ValueType> &x, const LocalVector<ValueType> &y);
+  virtual void Power(const double power);
 
 protected:
 
@@ -171,17 +174,23 @@ private:
   /// Accelerator Vector
   AcceleratorVector<ValueType> *vector_accel_;
 
-  friend class LocalVector<double>;  
-  friend class LocalVector<float>;  
-  friend class LocalVector<int>;  
+  friend class LocalVector<double>;
+  friend class LocalVector<float>;
+  friend class LocalVector<std::complex<double> >;
+  friend class LocalVector<std::complex<float> >;
+  friend class LocalVector<int>;
 
-  friend class LocalMatrix<double>;  
-  friend class LocalMatrix<float>;  
+  friend class LocalMatrix<double>;
+  friend class LocalMatrix<float>;
+  friend class LocalMatrix<std::complex<double> >;
+  friend class LocalMatrix<std::complex<float> >;
 
-  friend class LocalMatrix<ValueType>;  
-  friend class GlobalMatrix<ValueType>;  
-  friend class LocalStencil<ValueType>;  
-  friend class GlobalStencil<ValueType>;  
+  friend class LocalStencil<double>;
+  friend class LocalStencil<float>;
+  friend class LocalStencil<std::complex<double> >;
+  friend class LocalStencil<std::complex<float> >;
+
+  friend class LocalMatrix<ValueType>;
 
 };
 
@@ -189,4 +198,3 @@ private:
 }
 
 #endif // PARALUTION_LOCAL_VECTOR_HPP_
-

@@ -1,8 +1,15 @@
-// *************************************************************************
+// **************************************************************************
 //
 //    PARALUTION   www.paralution.com
 //
-//    Copyright (C) 2012-2014 Dimitar Lukarski
+//    Copyright (C) 2015  PARALUTION Labs UG (haftungsbeschränkt) & Co. KG
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRA 706051
+//                        Vertreten durch:
+//                        PARALUTION Labs Verwaltungs UG (haftungsbeschränkt)
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRB 721277
+//                        Geschäftsführer: Dimitar Lukarski, Nico Trost
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -17,11 +24,11 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// *************************************************************************
+// **************************************************************************
 
 
 
-// PARALUTION version 0.7.0b 
+// PARALUTION version 1.0.0 
 
 
 #ifndef PARALUTION_BASE_HPP_
@@ -29,15 +36,43 @@
 
 #include "backend_manager.hpp"
 
+#include <complex>
+#include <vector>
+
 namespace paralution {
+
+class ParalutionObj {
+
+public:
+
+  ParalutionObj();
+  virtual ~ParalutionObj();
+
+  /// Clear (free all data) the object
+  virtual void Clear() = 0;
+
+protected:
+  size_t global_obj_id;
+
+};
+
+/// Global data for all PARALUTION objects
+struct Paralution_Object_Data {
+  
+  std::vector<class ParalutionObj*> all_obj;
+
+};
+
+/// Global obj tracking structure
+extern struct Paralution_Object_Data Paralution_Object_Data_Tracking;
 
 /// Base class for operator and vector 
 /// (i.e. global/local matrix/stencil/vector) classes,
 /// all the backend-related interface and data 
 /// are defined here
 template <typename ValueType>
-class BaseParalution {
-  
+class BaseParalution : public ParalutionObj {
+
 public:
 
   BaseParalution();
@@ -69,7 +104,10 @@ public:
   void CloneBackend(const BaseParalution<ValueType2> &src);
 
   /// Print the object information (properties, backends)
-  virtual void info() const = 0;   
+  virtual void info() const = 0;
+
+  /// Clear (free all data) the object
+  virtual void Clear() = 0;
 
 protected:
 
@@ -88,9 +126,12 @@ protected:
   // active async transfer
   bool asyncf;
 
-  friend class BaseParalution<int>;
-  friend class BaseParalution<float>;
   friend class BaseParalution<double>;
+  friend class BaseParalution<float>;
+  friend class BaseParalution<std::complex<double> >;
+  friend class BaseParalution<std::complex<float> >;
+
+  friend class BaseParalution<int>;
 
 };
 
@@ -98,4 +139,3 @@ protected:
 }
 
 #endif // PARALUTION_LOCAL_BASE_HPP_
-

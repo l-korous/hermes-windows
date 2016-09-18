@@ -82,7 +82,7 @@ Foam::paralution_PBiCG::paralution_PBiCG
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-Foam::lduMatrix::solverPerformance Foam::paralution_PBiCG::solve
+Foam::solverPerformance Foam::paralution_PBiCG::solve
 (
     scalarField& psi,
     const scalarField& source,
@@ -99,8 +99,8 @@ Foam::lduMatrix::solverPerformance Foam::paralution_PBiCG::solve
     int ILUq     = controlDict_.lookupOrDefault<int>("ILUq", 1);
     int MEp      = controlDict_.lookupOrDefault<int>("MEp", 1);
     word LBPre   = controlDict_.lookupOrDefault<word>("LastBlockPrecond", "paralution_Jacobi");
-    
-    lduMatrix::solverPerformance solverPerf(typeName + '(' + precond_name + ')', fieldName_);
+
+    solverPerformance solverPerf(typeName + '(' + precond_name + ')', fieldName_);
 
     register label nCells = psi.size();
 
@@ -132,8 +132,6 @@ Foam::lduMatrix::solverPerformance Foam::paralution_PBiCG::solve
       else if (mformat == "COO")   mf = paralution::COO;
       else if (mformat == "DENSE") mf = paralution::DENSE;
 
-      paralution::init_paralution();
-
       paralution::LocalVector<double> x;
       paralution::LocalVector<double> rhs;
       paralution::LocalMatrix<double> mat;
@@ -142,9 +140,9 @@ Foam::lduMatrix::solverPerformance Foam::paralution_PBiCG::solve
                      paralution::LocalVector<double>,
                      double> ls;
 
-      import_openfoam_matrix(matrix(), &mat);
-      import_openfoam_vector(source, &rhs);
-      import_openfoam_vector(psi, &x);
+      paralution::import_openfoam_matrix(matrix(), &mat);
+      paralution::import_openfoam_vector(source, &rhs);
+      paralution::import_openfoam_vector(psi, &x);
 
       ls.Clear();
 
@@ -152,7 +150,7 @@ Foam::lduMatrix::solverPerformance Foam::paralution_PBiCG::solve
                                  paralution::LocalVector<double>,
                                  double > *precond = NULL;
 
-      precond = GetPreconditioner<double>(precond_name, LBPre, pformat, ILUp, ILUq, MEp);
+      precond = paralution::GetPreconditioner<double>(precond_name, LBPre, pformat, ILUp, ILUq, MEp);
       if (precond != NULL) ls.SetPreconditioner(*precond);
 
       ls.SetOperator(mat);
@@ -200,12 +198,11 @@ Foam::lduMatrix::solverPerformance Foam::paralution_PBiCG::solve
           break;
       }
 
-//      mat.info();
       ls.Verbose(0);
 
       ls.Solve(rhs, &x);
 
-      export_openfoam_vector(x, &psi);
+      paralution::export_openfoam_vector(x, &psi);
 
       solverPerf.finalResidual()   = ls.GetCurrentResidual() / normFactor; // divide by normFactor, see lduMatrixSolver.C
       solverPerf.nIterations()     = ls.GetIterationCount();
@@ -216,8 +213,6 @@ Foam::lduMatrix::solverPerformance Foam::paralution_PBiCG::solve
         precond->Clear();
         delete precond;
       }
-
-      paralution::stop_paralution();
 
     }
 

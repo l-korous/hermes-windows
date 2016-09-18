@@ -101,7 +101,7 @@ namespace xsd
           //
           using namespace xercesc;
 
-          DOMDocument& doc (*e.getOwnerDocument ());
+          xercesc::DOMDocument& doc (*e.getOwnerDocument ());
           const DOMElement& se (x.dom_content ().get ());
           DOMNamedNodeMap& sa (*se.getAttributes ());
 

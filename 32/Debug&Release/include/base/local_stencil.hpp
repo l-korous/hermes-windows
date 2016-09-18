@@ -1,8 +1,15 @@
-// *************************************************************************
+// **************************************************************************
 //
 //    PARALUTION   www.paralution.com
 //
-//    Copyright (C) 2012-2014 Dimitar Lukarski
+//    Copyright (C) 2015  PARALUTION Labs UG (haftungsbeschränkt) & Co. KG
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRA 706051
+//                        Vertreten durch:
+//                        PARALUTION Labs Verwaltungs UG (haftungsbeschränkt)
+//                        Am Hasensprung 6, 76571 Gaggenau
+//                        Handelsregister: Amtsgericht Mannheim, HRB 721277
+//                        Geschäftsführer: Dimitar Lukarski, Nico Trost
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -17,11 +24,11 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// *************************************************************************
+// **************************************************************************
 
 
 
-// PARALUTION version 0.7.0b 
+// PARALUTION version 1.0.0 
 
 
 #ifndef PARALUTION_LOCAL_STENCIL_HPP_
@@ -29,6 +36,8 @@
 
 #include "operator.hpp"
 #include "local_vector.hpp"
+#include "base_stencil.hpp"
+#include "stencil_types.hpp"
 
 namespace paralution {
 
@@ -37,47 +46,52 @@ class LocalVector;
 template <typename ValueType>
 class GlobalVector;
 
-template <typename ValueType>
-class GlobalStencil;
-
-
 // Local Stencil
 template <typename ValueType>
 class LocalStencil : public Operator<ValueType> {
-  
+
 public:
 
   LocalStencil();
+  LocalStencil(unsigned int type);
   virtual ~LocalStencil();
 
-  inline int get_ndim(void) const { return this->ndim_; }
+  virtual void info() const;
+
+  virtual int get_ndim(void) const;
   virtual int get_nrow(void) const;
   virtual int get_ncol(void) const;
+  virtual int get_nnz(void) const;
+
+  virtual void SetGrid(const int size);
+
+  virtual void Clear();
 
   virtual void Apply(const LocalVector<ValueType> &in, LocalVector<ValueType> *out) const; 
   virtual void ApplyAdd(const LocalVector<ValueType> &in, const ValueType scalar, 
                         LocalVector<ValueType> *out) const; 
 
+  virtual void MoveToAccelerator(void);
+  virtual void MoveToHost(void);
+
 protected:
 
   virtual bool is_host(void) const {return true;};
-  virtual bool is_accel(void) const {return true;};
-
+  virtual bool is_accel(void) const {return false;};
 
 private:
   
   std::string object_name_ ;
 
-  //  BaseStencil<ValueType> *stencil_;
+  BaseStencil<ValueType> *stencil_;
 
+  HostStencil<ValueType> *stencil_host_;
+  AcceleratorStencil<ValueType> *stencil_accel_;
 
-  int ndim_;
-  int *dim_;
-
-  friend class LocalVector<ValueType>;  
-  friend class GlobalVector<ValueType>;  
-  friend class GlobalStencil<ValueType>;  
   
+  friend class LocalVector<ValueType>;
+  friend class GlobalVector<ValueType>;
+
 };
 
 

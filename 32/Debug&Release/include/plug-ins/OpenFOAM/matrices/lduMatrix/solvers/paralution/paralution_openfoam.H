@@ -19,41 +19,42 @@
 //
 // *************************************************************************
 
+#ifndef PARALUTION_PLUGINS_OPENFOAM_HPP_
+#define PARALUTION_PLUGINS_OPENFOAM_HPP_
+
 #include "lduMatrix.H"
 
 #include <assert.h>
 #include <paralution.hpp>
 
-// TODO
-// this should be in a namespace !!!
+namespace paralution {
 
 enum _preconditioner_type {
-  paralution_None,
-  paralution_Jacobi,
-  paralution_MultiColoredGS,
-  paralution_MultiColoredSGS,
-  paralution_ILU,
-  paralution_MultiColoredILU,
-  paralution_MultiElimination,
-  paralution_FSAI
+  paralution_None             = 0,
+  paralution_Jacobi           = 1,
+  paralution_MultiColoredGS   = 2,
+  paralution_MultiColoredSGS  = 3,
+  paralution_ILU              = 4,
+  paralution_MultiColoredILU  = 5,
+  paralution_MultiElimination = 6,
+  paralution_FSAI             = 7
 };
 
 enum _solver_type {
-  paralution_CG,
-  paralution_BiCGStab,
-  paralution_GMRES,
-  paralution_FixedPoint,
-  paralution_FGMRES
+  paralution_CG         = 0,
+  paralution_BiCGStab   = 1,
+  paralution_GMRES      = 2,
+  paralution_FixedPoint = 3,
+  paralution_FGMRES     = 4
 };
-  
 
 template <typename ValueType>
-void import_openfoam_matrix(const Foam::lduMatrix &foam_mat,
-                            paralution::LocalMatrix<ValueType> *mat) {
+void import_openfoam_matrix(const Foam::lduMatrix &foam_mat, LocalMatrix<ValueType> *mat) {
+
+  assert(mat != NULL);
 
   // Matrix size
   int n = foam_mat.diag().size();
-  int m = foam_mat.diag().size();
   int nnz = foam_mat.diag().size() + foam_mat.lower().size() + foam_mat.upper().size();
 
   // CSR values
@@ -61,9 +62,9 @@ void import_openfoam_matrix(const Foam::lduMatrix &foam_mat,
   int *col = NULL;
   ValueType *val = NULL;
 
-  paralution::allocate_host(n+1, &row_offset);
-  paralution::allocate_host(nnz, &col);
-  paralution::allocate_host(nnz, &val);
+  allocate_host(n+1, &row_offset);
+  allocate_host(nnz, &col);
+  allocate_host(nnz, &val);
 
   row_offset[0] = 0;
   // initialize row_offsets with ones from OpenFOAM diagonal part
@@ -101,7 +102,6 @@ void import_openfoam_matrix(const Foam::lduMatrix &foam_mat,
 
     col[dest_lower] = *it_low;
     val[dest_lower] = *it_val;
-
     ++row_offset[r_lower];
 
     it_low++;
@@ -118,6 +118,7 @@ void import_openfoam_matrix(const Foam::lduMatrix &foam_mat,
     val[dest_diag] = *it_val;
     col[dest_diag] = i;
     ++row_offset[i+1];
+
     it_val++;
   }
 
@@ -133,7 +134,6 @@ void import_openfoam_matrix(const Foam::lduMatrix &foam_mat,
 
     col[dest_upper] = *it_up;
     val[dest_upper] = *it_val;
-
     ++row_offset[r_upper];
 
     it_low++;
@@ -143,13 +143,34 @@ void import_openfoam_matrix(const Foam::lduMatrix &foam_mat,
 
   mat->Clear();
   mat->MoveToHost();
-  mat->SetDataPtrCSR(&row_offset, &col, &val, "OpenFOAM Matrix", nnz, n, m);
+  mat->SetDataPtrCSR(&row_offset, &col, &val, "OpenFOAM Matrix", nnz, n, n);
 
 }
 
 template <typename ValueType>
-void import_openfoam_vector(const Foam::scalarField &foam_vec,
-                            paralution::LocalVector<ValueType> *vec) {
+void export_openfoam_vector(LocalVector<ValueType> &vec, Foam::scalarField *foam_vec) {
+
+  assert(int(vec.get_size()) == int(foam_vec->size()));
+
+  vec.MoveToHost();
+
+  Foam::UList<double>::iterator it = foam_vec->begin();
+
+  int size = vec.get_size();
+  ValueType *val = NULL;
+
+  vec.LeaveDataPtr(&val);
+  vec.Clear();
+
+  for (int i = 0; i < size; ++i, ++it)
+    *it = val[i];
+
+  free_host(&val);
+
+}
+
+template <typename ValueType>
+void import_openfoam_vector(const Foam::scalarField &foam_vec, LocalVector<ValueType> *vec) {
 
   vec->Clear();
   vec->MoveToHost();
@@ -158,10 +179,9 @@ void import_openfoam_vector(const Foam::scalarField &foam_vec,
   Foam::UList<double>::const_iterator it_end = foam_vec.end();
 
   int size = int(foam_vec.size());
-  int i = 0;
   ValueType *val = NULL;
 
-  paralution::allocate_host(size, &val);
+  allocate_host(size, &val);
 
   for (int i=0; it != it_end; ++it, ++i)
     val[i] = *it;
@@ -171,29 +191,8 @@ void import_openfoam_vector(const Foam::scalarField &foam_vec,
 }
 
 template <typename ValueType>
-void export_openfoam_vector(paralution::LocalVector<ValueType> &vec,
-                            Foam::scalarField *foam_vec) {
-
-  vec.MoveToHost();
-  assert(int(vec.get_size()) == int(foam_vec->size()));
-
-  Foam::UList<double>::iterator it = foam_vec->begin();
-
-  int size = vec.get_size();
-  ValueType *val = NULL;
-
-  vec.LeaveDataPtr(&val);
-
-  for (int i = 0; i < size; ++i, ++it)
-    *it = val[i];
-
-  paralution::free_host(&val);
-
-}
-
-template <typename ValueType>
 void import_openfoam_restriction(const Foam::labelField &foam_vec,
-                                 paralution::LocalVector<ValueType> *vec) {
+                                 LocalVector<ValueType> *vec) {
 
   vec->Clear();
   vec->MoveToHost();
@@ -205,7 +204,7 @@ void import_openfoam_restriction(const Foam::labelField &foam_vec,
   int i = 0;
   ValueType *val = NULL;
 
-  paralution::allocate_host(size, &val);
+  allocate_host(size, &val);
 
   for (; it != it_end; ++it) {
     val[i] = *it;
@@ -216,9 +215,8 @@ void import_openfoam_restriction(const Foam::labelField &foam_vec,
 
 }
 
-template <typename ValueType> paralution::Preconditioner<paralution::LocalMatrix<ValueType>,
-                                                         paralution::LocalVector<ValueType>,
-                                                         ValueType >*
+template <typename ValueType> 
+Preconditioner<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType >*
 GetPreconditioner(const std::string precond_name, const std::string lbp_name, const std::string pformat,
                   const int ILUp, const int ILUq, const int MEp) {
 
@@ -231,19 +229,17 @@ GetPreconditioner(const std::string precond_name, const std::string lbp_name, co
   else if (precond_name == "paralution_MultiElimination") pType = paralution_MultiElimination;
   else if (precond_name == "paralution_FSAI")             pType = paralution_FSAI;
 
-  paralution::_matrix_format pf = paralution::CSR;
-  if      (pformat == "CSR")   pf = paralution::CSR;
-  else if (pformat == "ELL")   pf = paralution::ELL;
-  else if (pformat == "HYB")   pf = paralution::HYB;
-  else if (pformat == "MCSR")  pf = paralution::MCSR;
-  else if (pformat == "BCSR")  pf = paralution::BCSR;
-  else if (pformat == "COO")   pf = paralution::COO;
-  else if (pformat == "DIA")   pf = paralution::DIA;
-  else if (pformat == "DENSE") pf = paralution::DENSE;
+  _matrix_format pf = CSR;
+  if      (pformat == "CSR")   pf = CSR;
+  else if (pformat == "ELL")   pf = ELL;
+  else if (pformat == "HYB")   pf = HYB;
+  else if (pformat == "MCSR")  pf = MCSR;
+  else if (pformat == "BCSR")  pf = BCSR;
+  else if (pformat == "COO")   pf = COO;
+  else if (pformat == "DIA")   pf = DIA;
+  else if (pformat == "DENSE") pf = DENSE;
 
-  paralution::Preconditioner<paralution::LocalMatrix<ValueType>,
-                             paralution::LocalVector<ValueType>,
-                             ValueType > *precond = NULL;
+  Preconditioner<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType> *precond = NULL;
 
   switch(pType) {
 
@@ -251,75 +247,49 @@ GetPreconditioner(const std::string precond_name, const std::string lbp_name, co
       break;
 
     case paralution_Jacobi:
-      precond = new paralution::Jacobi<paralution::LocalMatrix<ValueType>,
-                                       paralution::LocalVector<ValueType>,
-                                       ValueType >;
+      precond = new Jacobi<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
       break;
 
     case paralution_MultiColoredGS:
-      paralution::MultiColoredGS<paralution::LocalMatrix<ValueType>,
-                                 paralution::LocalVector<ValueType>,
-                                 ValueType > *p_gs;
-      p_gs = new paralution::MultiColoredGS<paralution::LocalMatrix<ValueType>,
-                                            paralution::LocalVector<ValueType>,
-                                            ValueType >;
+      MultiColoredGS<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType> *p_gs;
+      p_gs = new MultiColoredGS<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
       p_gs->SetPrecondMatrixFormat(pf);
       precond = p_gs;
       break;
 
     case paralution_MultiColoredSGS:
-      paralution::MultiColoredSGS<paralution::LocalMatrix<ValueType>,
-                                  paralution::LocalVector<ValueType>,
-                                  ValueType > *p_sgs;
-      p_sgs = new paralution::MultiColoredSGS<paralution::LocalMatrix<ValueType>,
-                                              paralution::LocalVector<ValueType>,
-                                              ValueType >;
+      MultiColoredSGS<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType> *p_sgs;
+      p_sgs = new MultiColoredSGS<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
       p_sgs->SetPrecondMatrixFormat(pf);
       precond = p_sgs;
       break;
 
     case paralution_ILU:
-      paralution::ILU<paralution::LocalMatrix<ValueType>,
-                      paralution::LocalVector<ValueType>,
-                      ValueType > *p_ilu;
-      p_ilu = new paralution::ILU<paralution::LocalMatrix<ValueType>,
-                                  paralution::LocalVector<ValueType>,
-                                  ValueType >;
+      ILU<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType> *p_ilu;
+      p_ilu = new ILU<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
 
       p_ilu->Set(ILUp);
       precond = p_ilu;
       break;
 
     case paralution_MultiColoredILU:
-      paralution::MultiColoredILU<paralution::LocalMatrix<ValueType>,
-                                  paralution::LocalVector<ValueType>,
-                                  ValueType > *p_mcilu;
-      p_mcilu = new paralution::MultiColoredILU<paralution::LocalMatrix<ValueType>,
-                                                paralution::LocalVector<ValueType>,
-                                                ValueType >;
+      MultiColoredILU<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType> *p_mcilu;
+      p_mcilu = new MultiColoredILU<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
       p_mcilu->Set(ILUp, ILUq);
       p_mcilu->SetPrecondMatrixFormat(pf);
       precond = p_mcilu;
       break;
 
     case paralution_FSAI:
-      paralution::FSAI<paralution::LocalMatrix<ValueType>,
-                       paralution::LocalVector<ValueType>,
-                       ValueType > *p_fsai;
-      p_fsai = new paralution::FSAI<paralution::LocalMatrix<ValueType>,
-                                    paralution::LocalVector<ValueType>,
-                                    ValueType >;
+      FSAI<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType> *p_fsai;
+      p_fsai = new FSAI<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
       p_fsai->SetPrecondMatrixFormat(pf);
       precond = p_fsai;
       break;
 
     case paralution_MultiElimination:
-      paralution::MultiElimination<paralution::LocalMatrix<ValueType>,
-                                   paralution::LocalVector<ValueType>,
-                                   ValueType > *p_me;
-      p_me = new paralution::MultiElimination<paralution::LocalMatrix<ValueType>,
-                                              paralution::LocalVector<ValueType>,
-                                              ValueType >;
+      MultiElimination<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType> *p_me;
+      p_me = new MultiElimination<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
 
       _preconditioner_type lbp = paralution_Jacobi;
       if      ( lbp_name == "paralution_Jacobi" )          lbp = paralution_Jacobi;
@@ -328,9 +298,7 @@ GetPreconditioner(const std::string precond_name, const std::string lbp_name, co
       else if ( lbp_name == "paralution_ILU" )             lbp = paralution_ILU;
       else if ( lbp_name == "paralution_MultiColoredILU" ) lbp = paralution_MultiColoredILU;
 
-      paralution::Preconditioner<paralution::LocalMatrix<ValueType>,
-                                 paralution::LocalVector<ValueType>,
-                                 ValueType > *LBPrecond = NULL;
+      Preconditioner<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType > *LBPrecond = NULL;
 
       switch(lbp)
       {
@@ -339,45 +307,37 @@ GetPreconditioner(const std::string precond_name, const std::string lbp_name, co
 
         case paralution_MultiElimination:
         case paralution_Jacobi:
-          LBPrecond = new paralution::Jacobi<paralution::LocalMatrix<ValueType>,
-                                             paralution::LocalVector<ValueType>,
-                                             ValueType >;
+          LBPrecond = new Jacobi<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
           break;
 
         case paralution_MultiColoredGS:
-          LBPrecond = new paralution::MultiColoredGS<paralution::LocalMatrix<ValueType>,
-                                                     paralution::LocalVector<ValueType>,
-                                                     ValueType >;
+          LBPrecond = new MultiColoredGS<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
           break;
 
         case paralution_MultiColoredSGS:
-          LBPrecond = new paralution::MultiColoredSGS<paralution::LocalMatrix<ValueType>,
-                                                      paralution::LocalVector<ValueType>,
-                                                      ValueType >;
+          LBPrecond = new MultiColoredSGS<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
           break;
 
         case paralution_ILU:
-          paralution::ILU<paralution::LocalMatrix<ValueType>,
-                          paralution::LocalVector<ValueType>,
-                          ValueType > *p_ilu;
-          p_ilu = new paralution::ILU<paralution::LocalMatrix<ValueType>,
-                                      paralution::LocalVector<ValueType>,
-                                      ValueType >;
+          ILU<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType> *p_ilu;
+          p_ilu = new ILU<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
 
           p_ilu->Set(ILUp);
           LBPrecond = p_ilu;
           break;
 
         case paralution_MultiColoredILU:
-          paralution::MultiColoredILU<paralution::LocalMatrix<ValueType>,
-                                      paralution::LocalVector<ValueType>,
-                                      ValueType > *p_mcilu;
-          p_mcilu = new paralution::MultiColoredILU<paralution::LocalMatrix<ValueType>,
-                                                    paralution::LocalVector<ValueType>,
-                                                    ValueType >;
+          MultiColoredILU<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType> *p_mcilu;
+          p_mcilu = new MultiColoredILU<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
           p_mcilu->Set(ILUp, ILUq);
           LBPrecond = p_mcilu;
           break;
+
+        case paralution_FSAI:
+          FSAI<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType> *p_fsai;
+          p_fsai = new FSAI<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
+          LBPrecond = p_fsai;
+
       }
 
       p_me->Set(*LBPrecond, MEp);
@@ -390,9 +350,8 @@ GetPreconditioner(const std::string precond_name, const std::string lbp_name, co
 
 }
 
-template <typename ValueType> paralution::IterativeLinearSolver<paralution::LocalMatrix<ValueType>,
-                                                                paralution::LocalVector<ValueType>,
-                                                                ValueType >*
+template <typename ValueType>
+IterativeLinearSolver<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>*
 GetIterativeLinearSolver(const std::string solver_name, const ValueType relax) {
 
   _solver_type sType = paralution_CG;
@@ -402,45 +361,31 @@ GetIterativeLinearSolver(const std::string solver_name, const ValueType relax) {
   else if ( solver_name == "paralution_FixedPoint" ) sType = paralution_FixedPoint;
   else if ( solver_name == "paralution_FGMRES" )     sType = paralution_FGMRES;
 
-  paralution::IterativeLinearSolver<paralution::LocalMatrix<ValueType>,
-                                    paralution::LocalVector<ValueType>,
-                                    ValueType > *solver = NULL;
+  IterativeLinearSolver<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType> *solver = NULL;
 
   switch(sType) {
 
     case paralution_CG:
-      solver = new paralution::CG<paralution::LocalMatrix<ValueType>,
-                                  paralution::LocalVector<ValueType>,
-                                  ValueType >;
+      solver = new CG<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
       break;
 
     case paralution_BiCGStab:
-      solver = new paralution::BiCGStab<paralution::LocalMatrix<ValueType>,
-                                        paralution::LocalVector<ValueType>,
-                                        ValueType >;
+      solver = new BiCGStab<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
       break;
 
     case paralution_GMRES:
-      solver = new paralution::GMRES<paralution::LocalMatrix<ValueType>,
-                                     paralution::LocalVector<ValueType>,
-                                     ValueType >;
+      solver = new GMRES<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
       break;
 
     case paralution_FixedPoint:
-      paralution::FixedPoint<paralution::LocalMatrix<ValueType>,
-                             paralution::LocalVector<ValueType>,
-                             ValueType > *fp;
-      fp = new paralution::FixedPoint<paralution::LocalMatrix<ValueType>,
-                                      paralution::LocalVector<ValueType>,
-                                      ValueType >;
+      FixedPoint<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType> *fp;
+      fp = new FixedPoint<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
       fp->SetRelaxation(relax);
       solver = fp;
       break;
 
     case paralution_FGMRES:
-      solver = new paralution::FGMRES<paralution::LocalMatrix<ValueType>,
-                                      paralution::LocalVector<ValueType>,
-                                      ValueType >;
+      solver = new FGMRES<LocalMatrix<ValueType>, LocalVector<ValueType>, ValueType>;
       break;
 
   }
@@ -449,3 +394,7 @@ GetIterativeLinearSolver(const std::string solver_name, const ValueType relax) {
 
 }
 
+
+}
+
+#endif // PARALUTION_PLUGINS_OPENFOAM_HPP_

@@ -1,7 +1,7 @@
 #ifndef __HERMES_CONFIG_H_
 #define __HERMES_CONFIG_H_
 
-#define HERMES_STATIC_LIBS
+/* #undef HERMES_STATIC_LIBS */
 
 // OpenMP
 #define NUM_THREADS 8
@@ -13,17 +13,17 @@
 
 #define WITH_UMFPACK
 #define WITH_PARALUTION
-#define WITH_MUMPS
+/* #undef WITH_MUMPS */
 /* #undef WITH_SUPERLU */
 /* #undef WITH_PETSC */
-#define WITH_MATIO
+/* #undef WITH_MATIO */
 /* #undef WITH_EXODUSII */
 /* #undef WITH_MPI */
 
 /* #undef WITH_TC_MALLOC */
 /* #undef WITH_PJLIB */
-#define WITH_BSON
-#define WITH_MATIO
+/* #undef WITH_BSON */
+/* #undef WITH_MATIO */
 /* #undef MONGO_STATIC_BUILD */
 /* #undef UMFPACK_LONG_INT */
 
@@ -32,15 +32,15 @@
 /* #undef EXECINFO_FOUND */
 
 // trilinos
-#define WITH_TRILINOS
-#define HAVE_AMESOS
-#define HAVE_AZTECOO
-#define HAVE_TEUCHOS
-#define HAVE_EPETRA
-#define HAVE_IFPACK
-#define HAVE_ML
-#define HAVE_NOX
-#define HAVE_KOMPLEX
+/* #undef WITH_TRILINOS */
+/* #undef HAVE_AMESOS */
+/* #undef HAVE_AZTECOO */
+/* #undef HAVE_TEUCHOS */
+/* #undef HAVE_EPETRA */
+/* #undef HAVE_IFPACK */
+/* #undef HAVE_ML */
+/* #undef HAVE_NOX */
+/* #undef HAVE_KOMPLEX */
 
 // GLUT
 /* #undef NOGLUT */
