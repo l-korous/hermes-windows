@@ -1,5 +1,7 @@
 Information about this repository
 ---------------------------------
+This repository works with Visual Studio 2015. This one being the first 'free' one from Microsoft seems reasonable to be used.
+
 
 Structure
 ~~~~~~~~~
@@ -28,3 +30,7 @@ These files are sufficient for building Hermes with the following settings in th
   set(WITH_H2D YES)
   set(H2D_WITH_GLUT YES)
   
+  
+Notes::
+
+  For 64-bit build, CMake has a bug in detection of OpenMP, you need to comment out the line 'list(APPEND _OPENMP_REQUIRED_VARS OpenMP_C_FLAGS)' in "c:\Program Files\CMake\share\cmake-3.6\Modules\FindOpenMP.cmake" (this applies for CMake-3.6)
